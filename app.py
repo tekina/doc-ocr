@@ -1,101 +1,48 @@
 import os
-import base64
 import dotenv
 from flask import Flask, render_template, request, jsonify
-from werkzeug.utils import secure_filename
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
+# Import new services
+from services.config_loader import ConfigLoader
+from services.ocr_processor import OCRProcessor
+from utils.file_helpers import encode_image_to_base64
+
 load_dotenv()
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Initialize the Anthropic client with API key
 client = Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
 
-# Ensure the upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Initialize services
+config_loader = ConfigLoader(config_dir='config/document_types')
+ocr_processor = OCRProcessor(client, config_loader)
 
-def encode_image_to_base64(image_path):
-    """Encode the image file as a base64 string."""
-    with open(image_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
-    return base64_image
 
-def select_prompt(file_type):
-    if file_type == "KTP":
-        return (
-            "Extract and format details from this Indonesian KTP data in the image or pdf file. "
-            "Format it in JSON with fields: NIK, Name, BirthPlace, BirthDate, Gender, BloodType, "
-            "Address, RT/RW, Village, District, City, Province, Religion, MaritalStatus, Occupation, Nationality, ValidUntil. "
-            "Do not wrap the json codes in JSON markers"
-        )
-    else:
-        return (
-            "Extract and format details from this Indonesian NPWP data in the image or pdf file. "
-            "Format it in JSON with fields: NPWP15, NPWP16, Name, Issuing Location, Address, RT/RW, Village, District, City, Province, Registration Date. "
-            "Do not wrap the json codes in JSON markers"
-        )
-# image/jpeg = image file
-# application/pdf = pdf file
-def process_image_with_openai(base64_image, doc_type, file_type):
-    print("=== STARTING OCR PROCESSING ===", flush=True)
-    prompt = select_prompt(doc_type)
-    print(f"Prompt: {prompt[:100]}...", flush=True)
+# API Endpoints
+@app.route('/api/document-types', methods=['GET'])
+def get_document_types():
+    """Return all available document types."""
+    try:
+        doc_types = config_loader.get_all_document_types(enabled_only=True)
+        return jsonify({
+            'document_types': [dt.to_dict() for dt in doc_types]
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to load document types: {str(e)}'}), 500
 
-    # Determine media type from file_type
-    media_type = "image/jpeg"
-    if "png" in file_type.lower():
-        media_type = "image/png"
-    elif "webp" in file_type.lower():
-        media_type = "image/webp"
-    elif "gif" in file_type.lower():
-        media_type = "image/gif"
 
-    print(f"Media type: {media_type}", flush=True)
-    print("Calling Anthropic API...", flush=True)
-
-    response = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
-        max_tokens=2048,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": base64_image,
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ],
-            }
-        ],
-    )
-
-    print("API call completed!", flush=True)
-    print(f"Response: {response}", flush=True)
-    details = response.content[0].text
-    print(f"Extracted details: {details}", flush=True)
-
-    # Strip markdown code fences if present
-    if details.startswith("```"):
-        # Remove opening fence (```json or ```)
-        details = details.split('\n', 1)[1] if '\n' in details else details[3:]
-        # Remove closing fence (```)
-        if details.endswith("```"):
-            details = details.rsplit('\n```', 1)[0]
-        details = details.strip()
-
-    print(f"Cleaned details: {details}", flush=True)
-    return details
-
+@app.route('/api/document-types/<doc_type_id>', methods=['GET'])
+def get_document_type(doc_type_id):
+    """Return specific document type details."""
+    try:
+        doc_type = config_loader.get_document_type(doc_type_id)
+        if not doc_type:
+            return jsonify({'error': 'Document type not found'}), 404
+        return jsonify(doc_type.to_dict())
+    except Exception as e:
+        return jsonify({'error': f'Failed to load document type: {str(e)}'}), 500
 
 
 @app.route('/')
@@ -104,61 +51,73 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    """Upload and process document with OCR (in-memory processing only)."""
     import sys
     sys.stdout.flush()
     print("=== UPLOAD REQUEST RECEIVED ===", flush=True)
     print(str(request), flush=True)
     print(str(request.form), flush=True)
+
+    # Validate file
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
 
     file = request.files['file']
-    doc_type = request.form.get('fileType')
     file_type = file.mimetype
-    if doc_type == '':
-        return jsonify({'error': 'No file type selected'}), 400
 
-    print("##########File Details############# ")
-    print(file)
-    print(file_type)
-    print("pdf" in file_type)
-    print("image/" in file_type)
-    print(file_type)
-    print("##########File Details############# ")
+    # Get document type ID (support both old 'fileType' and new 'docTypeId' for backward compatibility)
+    doc_type_id = request.form.get('docTypeId') or request.form.get('fileType')
 
+    # Map old values to new IDs for backward compatibility
+    if doc_type_id == 'KTP':
+        doc_type_id = 'id_ktp'
+        print("Mapping legacy 'KTP' to 'id_ktp'", flush=True)
+    elif doc_type_id == 'NPWP':
+        doc_type_id = 'id_npwp'
+        print("Mapping legacy 'NPWP' to 'id_npwp'", flush=True)
+
+    if not doc_type_id or doc_type_id == '':
+        return jsonify({'error': 'No document type selected'}), 400
+
+    # Validate document type exists
+    doc_config = config_loader.get_document_type(doc_type_id)
+    if not doc_config:
+        return jsonify({'error': f'Invalid document type: {doc_type_id}'}), 400
+
+    print(f"##########File Details############# ", flush=True)
+    print(f"File: {file}", flush=True)
+    print(f"File type: {file_type}", flush=True)
+    print(f"Document type ID: {doc_type_id}", flush=True)
+    print(f"##########File Details############# ", flush=True)
 
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    # support only images for now
+    # Support only images for now
     if "pdf" in file_type:
         return jsonify({'error': 'PDF file support coming soon!'}), 400
-    # Save the uploaded file
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
 
-    # Encode the image as base64
-    base64_image = encode_image_to_base64(filepath)
+    # Read file directly from memory (never save to disk)
+    file_bytes = file.read()
+
+    # Encode the image bytes as base64
+    base64_image = encode_image_to_base64(file_bytes)
 
     try:
-        # Process the image with OpenAI API
-        details = process_image_with_openai(base64_image, doc_type, file_type)
+        # Process using OCRProcessor service
+        details = ocr_processor.process_document(base64_image, doc_type_id, file_type)
         # Return extracted details as JSON
         return jsonify({'details': details})
     except Exception as e:
-        print(f"Error occurred: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
+        print(f"Error occurred: {str(e)}", flush=True)
+        print(f"Error type: {type(e).__name__}", flush=True)
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Something went wrong: {str(e)}'}), 400
     finally:
-        print("Process finished")
-
-    # Process the image with OpenAI API
-    # details = process_image_with_openai(base64_image, doc_type, file_type)
-    # # Return extracted details as JSON
-    # return jsonify({'details': details})
+        # Clear file bytes from memory
+        del file_bytes
+        print("Process finished (file processed in memory only)", flush=True)
 
 if __name__ == '__main__':
     app.run(debug=True)

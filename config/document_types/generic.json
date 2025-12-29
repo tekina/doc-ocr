@@ -1,0 +1,18 @@
+{
+  "id": "generic",
+  "name": "Generic Document",
+  "country": "XX",
+  "category": "generic",
+  "description": "Extract all text and information from any document without predefined structure. Best for unknown or custom document types.",
+  "enabled": true,
+  "version": "1.0",
+  "sample_file": null,
+  "processing_mode": "generic",
+  "prompt_template": "Extract all visible text and information from this document. Analyze the document and return a JSON object with two fields: 1) 'full_text': a string containing all the text you can read from the document, maintaining reasonable formatting and structure. 2) 'detected_fields': an object containing any structured information you can identify, such as names, dates, numbers, addresses, ID numbers, or other key-value pairs. Use descriptive field names. If you cannot identify structured fields, return an empty object for detected_fields. Do not wrap the JSON in markdown code fences.",
+  "fields": [],
+  "metadata": {
+    "created_at": "2025-12-27T00:00:00Z",
+    "updated_at": "2025-12-27T00:00:00Z",
+    "author": "system"
+  }
+}

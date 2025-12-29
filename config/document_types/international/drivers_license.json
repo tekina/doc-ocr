@@ -1,0 +1,110 @@
+{
+  "id": "intl_drivers_license",
+  "name": "Driver's License (International)",
+  "country": "XX",
+  "category": "identity",
+  "description": "Driver's license from any country. Extracts license number, personal information, license class, and validity dates.",
+  "enabled": true,
+  "version": "1.0",
+  "sample_file": null,
+  "processing_mode": "structured",
+  "prompt_template": "Extract and format details from this driver's license document in the image. Return the data as a JSON object with the following fields: {{field_list}}. Ensure all field names match exactly. If a field is not present or unreadable, use null. Do not wrap the json codes in JSON markers",
+  "fields": [
+    {
+      "id": "LicenseNumber",
+      "label": "License Number",
+      "type": "text",
+      "required": true,
+      "order": 1
+    },
+    {
+      "id": "FullName",
+      "label": "Full Name",
+      "type": "text",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "DateOfBirth",
+      "label": "Date of Birth",
+      "type": "date",
+      "required": true,
+      "order": 3
+    },
+    {
+      "id": "Sex",
+      "label": "Sex/Gender",
+      "type": "text",
+      "required": false,
+      "order": 4
+    },
+    {
+      "id": "Address",
+      "label": "Address",
+      "type": "text",
+      "required": false,
+      "order": 5
+    },
+    {
+      "id": "Height",
+      "label": "Height",
+      "type": "text",
+      "required": false,
+      "order": 6
+    },
+    {
+      "id": "EyeColor",
+      "label": "Eye Color",
+      "type": "text",
+      "required": false,
+      "order": 7
+    },
+    {
+      "id": "LicenseClass",
+      "label": "License Class/Category",
+      "type": "text",
+      "required": true,
+      "order": 8
+    },
+    {
+      "id": "DateOfIssue",
+      "label": "Date of Issue",
+      "type": "date",
+      "required": true,
+      "order": 9
+    },
+    {
+      "id": "DateOfExpiry",
+      "label": "Date of Expiry",
+      "type": "date",
+      "required": true,
+      "order": 10
+    },
+    {
+      "id": "IssuingAuthority",
+      "label": "Issuing Authority",
+      "type": "text",
+      "required": false,
+      "order": 11
+    },
+    {
+      "id": "Country",
+      "label": "Issuing Country",
+      "type": "text",
+      "required": false,
+      "order": 12
+    },
+    {
+      "id": "Restrictions",
+      "label": "Restrictions/Endorsements",
+      "type": "text",
+      "required": false,
+      "order": 13
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-12-27T00:00:00Z",
+    "updated_at": "2025-12-27T00:00:00Z",
+    "author": "system"
+  }
+}

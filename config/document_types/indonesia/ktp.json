@@ -1,0 +1,138 @@
+{
+  "id": "id_ktp",
+  "name": "Indonesian KTP (ID Card)",
+  "country": "ID",
+  "category": "identity",
+  "description": "Indonesian national identity card (Kartu Tanda Penduduk)",
+  "enabled": true,
+  "version": "1.0",
+  "sample_file": "sample_ktp.png",
+  "processing_mode": "structured",
+  "prompt_template": "Extract and format details from this Indonesian KTP (ID card) data in the image. Format it in JSON with fields: {{field_list}}. Ensure all field names match exactly. If a field is not present or unreadable, use null. Do not wrap the json codes in JSON markers",
+  "fields": [
+    {
+      "id": "NIK",
+      "label": "NIK",
+      "type": "text",
+      "required": true,
+      "order": 1
+    },
+    {
+      "id": "Name",
+      "label": "Full Name",
+      "type": "text",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "BirthPlace",
+      "label": "Place of Birth",
+      "type": "text",
+      "required": true,
+      "order": 3
+    },
+    {
+      "id": "BirthDate",
+      "label": "Date of Birth",
+      "type": "text",
+      "required": true,
+      "order": 4
+    },
+    {
+      "id": "Gender",
+      "label": "Gender",
+      "type": "text",
+      "required": true,
+      "order": 5
+    },
+    {
+      "id": "BloodType",
+      "label": "Blood Type",
+      "type": "text",
+      "required": false,
+      "order": 6
+    },
+    {
+      "id": "Address",
+      "label": "Address",
+      "type": "text",
+      "required": true,
+      "order": 7
+    },
+    {
+      "id": "RT/RW",
+      "label": "RT/RW",
+      "type": "text",
+      "required": false,
+      "order": 8
+    },
+    {
+      "id": "Village",
+      "label": "Village/Kelurahan",
+      "type": "text",
+      "required": false,
+      "order": 9
+    },
+    {
+      "id": "District",
+      "label": "District/Kecamatan",
+      "type": "text",
+      "required": false,
+      "order": 10
+    },
+    {
+      "id": "City",
+      "label": "City/Regency",
+      "type": "text",
+      "required": true,
+      "order": 11
+    },
+    {
+      "id": "Province",
+      "label": "Province",
+      "type": "text",
+      "required": true,
+      "order": 12
+    },
+    {
+      "id": "Religion",
+      "label": "Religion",
+      "type": "text",
+      "required": false,
+      "order": 13
+    },
+    {
+      "id": "MaritalStatus",
+      "label": "Marital Status",
+      "type": "text",
+      "required": false,
+      "order": 14
+    },
+    {
+      "id": "Occupation",
+      "label": "Occupation",
+      "type": "text",
+      "required": false,
+      "order": 15
+    },
+    {
+      "id": "Nationality",
+      "label": "Nationality",
+      "type": "text",
+      "required": true,
+      "order": 16
+    },
+    {
+      "id": "ValidUntil",
+      "label": "Valid Until",
+      "type": "text",
+      "required": false,
+      "order": 17
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-12-27T00:00:00Z",
+    "updated_at": "2025-12-27T00:00:00Z",
+    "author": "system"
+  }
+}

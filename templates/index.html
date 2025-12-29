@@ -3,51 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KTP/NPWP OCR Tool - Extract Details from Indonesian ID and Tax Documents</title>
-    <meta name="description" content="Easily extract information from KTP (Indonesian ID) and NPWP (tax documents) using our OCR tool. Upload images and get structured data instantly.">
-    <meta name="keywords" content="KTP OCR, NPWP OCR, Indonesian ID OCR, Tax document OCR, KTP extraction, NPWP extraction, OCR tool">
+    <title>Document OCR Tool - Extract Details from Multiple Document Types</title>
+    <meta name="description" content="Extract information from various document types using our OCR tool. Upload images of ID cards, tax documents, passports and more to get structured data instantly.">
+    <meta name="keywords" content="Document OCR, ID OCR, Tax document OCR, Passport OCR, Document extraction, OCR tool">
     <meta name="author" content="Aniket Garg">
 
     <!-- Open Graph -->
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://openai-doc-parser.onrender.com/">
-  <meta property="og:title"       content="KTP/NPWP OCR Tool ‒ Extract Details from Indonesian ID and Tax Documents">
-  <meta property="og:description" content="Easily extract information from KTP (Indonesian ID) and NPWP (tax documents) using our OCR tool. Upload images and get structured data instantly.">
+  <meta property="og:title"       content="Document OCR Tool ‒ Extract Details from Multiple Document Types">
+  <meta property="og:description" content="Extract information from various document types using our OCR tool. Upload images and get structured data instantly.">
   <meta property="og:image"       content="https://openai-doc-parser.onrender.com/static/favicon.ico">
 
     <!-- Canonical URL -->
     <link rel="canonical" href="https://openai-doc-parser.onrender.com/">
 
-    <title>KTP/NPWP OCR Tool</title>
+    <title>Document OCR Tool</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 </head>
 <body>
     <div class="container">
-        <h1>KTP/NPWP OCR Tool</h1>
+        <h1>Document OCR Tool</h1>
 
-        <!-- Sample Downloads -->
-        <div class="sample-downloads">
-          <p>Don’t have your own file? Try with our samples:</p>
-          <a class="sample-link" href="{{ url_for('static', filename='sample_ktp.png') }}" download>
-            ⬇️ Download Sample KTP
-          </a>
-          <a class="sample-link" href="{{ url_for('static', filename='sample_npwp.jpeg') }}" download>
-            ⬇️ Download Sample NPWP
-          </a>
-        </div>
-        
         <form id="uploadForm" enctype="multipart/form-data">
-            <label>Select Document Type:</label>
-            <div class="radio-group">
-                <label>
-                    <input type="radio" name="fileType" value="KTP">
-                    KTP
-                </label>
-                <label>
-                    <input type="radio" name="fileType" value="NPWP">
-                    NPWP
-                </label>
+            <label for="docTypeId">Select Document Type:</label>
+            <select name="docTypeId" id="docTypeId" required>
+                <option value="">-- Loading document types... --</option>
+            </select>
+
+            <!-- Document description -->
+            <div id="docTypeDescription" class="help-box" style="display: none; margin-top: 10px;">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Dynamic sample download -->
+            <div id="sampleDownload" style="display: none; margin-top: 10px; margin-bottom: 15px;">
+                <a id="sampleLink" class="sample-link" href="#" download>
+                    ⬇️ Download Sample Document
+                </a>
             </div>
 
             <label for="file">Upload File:</label>
@@ -87,24 +81,102 @@
 
     <!-- Footer Section -->
     <footer>
-        <p>&copy; <span id="year"></span> KTP/NPWP OCR Tool. All rights reserved.</p>
+        <p>&copy; <span id="year"></span> Document OCR Tool. All rights reserved.</p>
     </footer>
 
     <script>
+        // Global variable to store document types
+        let documentTypes = [];
+
+        // Load document types when page loads
+        async function loadDocumentTypes() {
+            try {
+                const response = await fetch('/api/document-types');
+                const data = await response.json();
+                documentTypes = data.document_types;
+                populateDocumentTypeSelect();
+            } catch (error) {
+                console.error('Failed to load document types:', error);
+                displayError('Failed to load document types. Please refresh the page.');
+            }
+        }
+
+        // Populate the select dropdown with document types
+        function populateDocumentTypeSelect() {
+            const select = document.getElementById('docTypeId');
+
+            // Clear loading message
+            select.innerHTML = '<option value="">-- Select a document type --</option>';
+
+            // Group by category
+            const categories = {};
+            documentTypes.forEach(dt => {
+                if (!categories[dt.category]) {
+                    categories[dt.category] = [];
+                }
+                categories[dt.category].push(dt);
+            });
+
+            // Add options grouped by category
+            Object.keys(categories).sort().forEach(category => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category.charAt(0).toUpperCase() + category.slice(1);
+
+                categories[category].forEach(dt => {
+                    const option = document.createElement('option');
+                    option.value = dt.id;
+                    option.textContent = dt.name;
+                    option.dataset.description = dt.description;
+                    option.dataset.sampleFile = dt.sample_file || '';
+                    optgroup.appendChild(option);
+                });
+
+                select.appendChild(optgroup);
+            });
+        }
+
+        // Show description and sample when document type is selected
+        document.getElementById('docTypeId').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const description = selectedOption.dataset.description;
+            const sampleFile = selectedOption.dataset.sampleFile;
+
+            // Show description
+            const descBox = document.getElementById('docTypeDescription');
+            if (description && this.value) {
+                descBox.textContent = description;
+                descBox.style.display = 'block';
+            } else {
+                descBox.style.display = 'none';
+            }
+
+            // Show sample download link if available
+            const sampleDownload = document.getElementById('sampleDownload');
+            const sampleLink = document.getElementById('sampleLink');
+            if (sampleFile && this.value) {
+                sampleLink.href = `/static/${sampleFile}`;
+                sampleDownload.style.display = 'block';
+            } else {
+                sampleDownload.style.display = 'none';
+            }
+        });
+
+        // Call on page load
+        document.addEventListener('DOMContentLoaded', loadDocumentTypes);
 
         document.getElementById('uploadForm').onsubmit = async function(event) {
             event.preventDefault();
 
             const formData = new FormData();
-            const fileType = document.querySelector('input[name="fileType"]:checked');
+            const docTypeId = document.getElementById('docTypeId').value;
             const file = document.getElementById("file").files[0];
             const submitButton = document.getElementById("submitButton");
             const buttonText = document.getElementById("buttonText");
             const loader = document.getElementById("loader");
 
             // Check if a document type is selected
-            if (!fileType) {
-                displayError("Please select a document type (KTP or NPWP).");
+            if (!docTypeId) {
+                displayError("Please select a document type.");
                 return;
             }
 
@@ -114,7 +186,7 @@
             submitButton.disabled = true; // Disable the button
             submitButton.classList.add("disabled-button"); // Add the disabled styling
 
-            formData.append("fileType", fileType.value);
+            formData.append("docTypeId", docTypeId);
             formData.append("file", file);
 
             try {
@@ -157,18 +229,102 @@
             tbody.innerHTML = ""; // Clear any existing rows
 
             const detailsData = JSON.parse(details);
-            for (const [field, value] of Object.entries(detailsData)) {
-                const row = document.createElement("tr");
-                const fieldCell = document.createElement("td");
-                const valueCell = document.createElement("td");
 
-                fieldCell.textContent = field;
-                valueCell.textContent = value;
+            // Check if this is a generic document response (has full_text and detected_fields)
+            if (detailsData.full_text && detailsData.detected_fields) {
+                // Display full text in expandable section
+                const fullTextRow = createExpandableRow('Full Text', detailsData.full_text);
+                tbody.appendChild(fullTextRow);
 
-                row.appendChild(fieldCell);
-                row.appendChild(valueCell);
-                tbody.appendChild(row);
+                // Display detected fields normally
+                if (Object.keys(detailsData.detected_fields).length > 0) {
+                    for (const [field, value] of Object.entries(detailsData.detected_fields)) {
+                        const row = createTableRow(field, value);
+                        tbody.appendChild(row);
+                    }
+                } else {
+                    // No structured fields detected
+                    const noFieldsRow = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.colSpan = 2;
+                    cell.textContent = "No structured fields detected";
+                    cell.style.fontStyle = "italic";
+                    cell.style.color = "#999";
+                    cell.style.textAlign = "center";
+                    noFieldsRow.appendChild(cell);
+                    tbody.appendChild(noFieldsRow);
+                }
+            } else {
+                // Normal structured document display
+                for (const [field, value] of Object.entries(detailsData)) {
+                    const row = createTableRow(field, value);
+                    tbody.appendChild(row);
+                }
             }
+        }
+
+        // Helper function to create a normal table row
+        function createTableRow(field, value) {
+            const row = document.createElement("tr");
+            const fieldCell = document.createElement("td");
+            const valueCell = document.createElement("td");
+
+            fieldCell.textContent = field;
+            valueCell.textContent = value || 'N/A';
+
+            row.appendChild(fieldCell);
+            row.appendChild(valueCell);
+            return row;
+        }
+
+        // Helper function to create an expandable row for long text
+        function createExpandableRow(field, value) {
+            const row = document.createElement("tr");
+            const fieldCell = document.createElement("td");
+            const valueCell = document.createElement("td");
+
+            fieldCell.textContent = field;
+            fieldCell.style.verticalAlign = "top";
+
+            // Create expandable content
+            const container = document.createElement("div");
+            container.className = "expandable-container";
+
+            const preview = document.createElement("div");
+            preview.className = "text-preview";
+            preview.textContent = value.substring(0, 150) + (value.length > 150 ? '...' : '');
+
+            const fullContent = document.createElement("div");
+            fullContent.className = "full-content";
+            fullContent.style.display = "none";
+            fullContent.textContent = value;
+            fullContent.style.whiteSpace = "pre-wrap";
+
+            const toggleButton = document.createElement("button");
+            toggleButton.className = "toggle-button";
+            toggleButton.textContent = "Show More";
+            toggleButton.type = "button";
+            toggleButton.onclick = function() {
+                if (fullContent.style.display === "none") {
+                    fullContent.style.display = "block";
+                    preview.style.display = "none";
+                    toggleButton.textContent = "Show Less";
+                } else {
+                    fullContent.style.display = "none";
+                    preview.style.display = "block";
+                    toggleButton.textContent = "Show More";
+                }
+            };
+
+            container.appendChild(preview);
+            container.appendChild(fullContent);
+            container.appendChild(toggleButton);
+
+            valueCell.appendChild(container);
+
+            row.appendChild(fieldCell);
+            row.appendChild(valueCell);
+            return row;
         }
 
         // Function to display error messages

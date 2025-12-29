@@ -1,0 +1,110 @@
+{
+  "id": "intl_passport",
+  "name": "International Passport",
+  "country": "XX",
+  "category": "identity",
+  "description": "International passport from any country. Extracts standard passport fields including personal information, passport number, and validity dates.",
+  "enabled": true,
+  "version": "1.0",
+  "sample_file": null,
+  "processing_mode": "structured",
+  "prompt_template": "Extract and format details from this passport document in the image. Return the data as a JSON object with the following fields: {{field_list}}. Ensure all field names match exactly. If a field is not present or unreadable, use null. Do not wrap the json codes in JSON markers",
+  "fields": [
+    {
+      "id": "PassportNumber",
+      "label": "Passport Number",
+      "type": "text",
+      "required": true,
+      "order": 1
+    },
+    {
+      "id": "Type",
+      "label": "Type",
+      "type": "text",
+      "required": false,
+      "order": 2
+    },
+    {
+      "id": "CountryCode",
+      "label": "Country Code",
+      "type": "text",
+      "required": true,
+      "order": 3
+    },
+    {
+      "id": "Surname",
+      "label": "Surname",
+      "type": "text",
+      "required": true,
+      "order": 4
+    },
+    {
+      "id": "GivenNames",
+      "label": "Given Names",
+      "type": "text",
+      "required": true,
+      "order": 5
+    },
+    {
+      "id": "Nationality",
+      "label": "Nationality",
+      "type": "text",
+      "required": true,
+      "order": 6
+    },
+    {
+      "id": "DateOfBirth",
+      "label": "Date of Birth",
+      "type": "date",
+      "required": true,
+      "order": 7
+    },
+    {
+      "id": "Sex",
+      "label": "Sex",
+      "type": "text",
+      "required": true,
+      "order": 8
+    },
+    {
+      "id": "PlaceOfBirth",
+      "label": "Place of Birth",
+      "type": "text",
+      "required": false,
+      "order": 9
+    },
+    {
+      "id": "DateOfIssue",
+      "label": "Date of Issue",
+      "type": "date",
+      "required": true,
+      "order": 10
+    },
+    {
+      "id": "DateOfExpiry",
+      "label": "Date of Expiry",
+      "type": "date",
+      "required": true,
+      "order": 11
+    },
+    {
+      "id": "Authority",
+      "label": "Issuing Authority",
+      "type": "text",
+      "required": false,
+      "order": 12
+    },
+    {
+      "id": "MRZ",
+      "label": "Machine Readable Zone",
+      "type": "text",
+      "required": false,
+      "order": 13
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-12-27T00:00:00Z",
+    "updated_at": "2025-12-27T00:00:00Z",
+    "author": "system"
+  }
+}
